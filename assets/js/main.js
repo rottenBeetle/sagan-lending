@@ -3,7 +3,7 @@
 // Config
 const CONFIG = {
 	GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyb7McXtMKzxqZ3LbTFiyvcecQCkm7LQBZB6cXuhdqLJp9SYwhyHyIxLhE2b_K1zxss/exec',
-	YANDEX_METRIKA_ID: 12345678
+	YANDEX_METRIKA_ID: 103903661
 };
 
 // Analytics
@@ -11,7 +11,7 @@ const Analytics = {
 	trackEvent(eventName, params = {}) {
 		try {
 			if (typeof ym !== 'undefined') {
-				ym(CONFIG.YANDEX_METRIKA_ID, 'reachGoal', eventName, params);
+				ym(103903661, 'reachGoal', eventName, params);
 			}
 			console.log('Событие отправлено:', eventName, params);
 		} catch (error) {
@@ -25,6 +25,8 @@ const Quiz = {
 	currentQuestion: 0,
 	answers: [],
 	totalScore: 0,
+	startTime: null,
+	questionStartTime: null,
 
 	questions: [
 		{
@@ -110,6 +112,8 @@ const Quiz = {
 		this.currentQuestion = 0;
 		this.answers = [];
 		this.totalScore = 0;
+		this.startTime = Date.now();
+		this.questionStartTime = Date.now();
 		this.showQuestion();
 		this.updateProgress();
 	},
@@ -127,6 +131,14 @@ const Quiz = {
 		`;
 		const nextButton = document.getElementById('next-button');
 		nextButton.classList.remove('enabled');
+		
+		// Отслеживание показа вопроса
+		Analytics.trackEvent('quiz_question_shown', {
+			questionNumber: this.currentQuestion + 1,
+			questionText: question.text.substring(0, 50) + '...'
+		});
+		
+		this.questionStartTime = Date.now();
 	},
 
 	selectAnswer(answerIndex) {
@@ -137,7 +149,14 @@ const Quiz = {
 		const selectedAnswer = question.answers[answerIndex];
 		this.answers[this.currentQuestion] = { questionIndex: this.currentQuestion, answerIndex, points: selectedAnswer.points };
 		document.getElementById('next-button').classList.add('enabled');
-		Analytics.trackEvent(`QUIZ_QUESTION_${this.currentQuestion + 1}`, { answer: selectedAnswer.text, points: selectedAnswer.points });
+		
+		// Расширенное отслеживание ответа
+		Analytics.trackEvent(`QUIZ_QUESTION_${this.currentQuestion + 1}`, { 
+			answer: selectedAnswer.text, 
+			points: selectedAnswer.points,
+			questionNumber: this.currentQuestion + 1,
+			timeSpent: this.getTimeSpentOnQuestion()
+		});
 	},
 
 	nextQuestion() {
@@ -173,6 +192,14 @@ const Quiz = {
 	showContactsForm() {
 		document.getElementById('quiz-container').classList.remove('active');
 		document.getElementById('contacts-container').classList.add('active');
+		
+		// Отслеживание завершения квиза
+		Analytics.trackEvent('quiz_complete', {
+			totalScore: this.totalScore,
+			level: this.getResultLevel(),
+			answers: this.answers.length,
+			totalTime: this.getTotalQuizTime()
+		});
 	},
 
 	async submitContacts(event) {
@@ -297,6 +324,21 @@ async sendDataToGoogle(data) {
 			<div class="result-description">${result.description}</div>
 		`;
 		document.getElementById('result-container').classList.add('active');
+		
+		// Отслеживание показа результата
+		Analytics.trackEvent('result_shown', {
+			level: level,
+			score: this.totalScore
+		});
+	},
+	
+	// Функции для отслеживания времени
+	getTimeSpentOnQuestion() {
+		return Math.round((Date.now() - this.questionStartTime) / 1000);
+	},
+	
+	getTotalQuizTime() {
+		return Math.round((Date.now() - this.startTime) / 1000);
 	}
 };
 
