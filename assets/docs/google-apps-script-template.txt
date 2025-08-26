@@ -1,0 +1,49 @@
+// Поместите этот код в Google Apps Script и разверните как веб-приложение (любой доступ, у кого есть ссылка)
+
+function doPost(e) {
+	try {
+		const data = JSON.parse(e.postData.contents);
+		if (!data.name || !data.messenger || !data.answers) {
+			return createResponse({ status: 'error', message: 'Обязательные поля не заполнены' });
+		}
+		const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID';
+		const sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
+		const rowData = [
+			new Date(),
+			data.name,
+			data.messenger,
+			...data.answers.map(a => a.points),
+			data.totalScore,
+			data.level,
+			data.utm ? JSON.stringify(data.utm) : ''
+		];
+		sheet.appendRow(rowData);
+		return createResponse({ status: 'success', message: 'Данные успешно сохранены' });
+	} catch (error) {
+		console.error('Ошибка обработки запроса:', error);
+		return createResponse({ status: 'error', message: 'Внутренняя ошибка сервера' });
+	}
+}
+
+function createResponse(data) {
+	return ContentService
+		.createTextOutput(JSON.stringify(data))
+		.setMimeType(ContentService.MimeType.JSON)
+		.setHeaders({
+			'Access-Control-Allow-Origin': '*',
+			'Access-Control-Allow-Methods': 'POST',
+			'Access-Control-Allow-Headers': 'Content-Type'
+		});
+}
+
+function doOptions(e) {
+	return createResponse({});
+}
+
+
+
+
+
+
+
+

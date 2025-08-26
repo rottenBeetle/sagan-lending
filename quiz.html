@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAGAN - Квиз</title>
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
+    
+    <!-- Яндекс.Метрика -->
+    <script type="text/javascript">
+        (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+        (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+        ym(12345678, "init", {
+             clickmap:true,
+             trackLinks:true,
+             accurateTrackBounce:true,
+             webvisor:true,
+             defer:true
+        });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/12345678" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a class="brand" href="index.html">SAGAN<span class="brand-accent">·</span></a>
+            <a id="header-cta" class="header-cta" href="quiz.html">Записаться на пробное</a>
+        </div>
+    </header>
+
+    <!-- Контейнер квиза -->
+    <div id="quiz-container" class="quiz-container active">
+        <div class="container">
+            <!-- Прогресс бар -->
+            <div class="quiz-progress">
+                <svg class="progress-heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <svg class="progress-heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <svg class="progress-heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <svg class="progress-heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <svg class="progress-heart" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+            </div>
+
+            <!-- Вопросы квиза -->
+            <div class="quiz-card">
+                <div id="quiz-content"></div>
+                <div class="quiz-next">
+                    <button id="next-button" class="next-button" onclick="Quiz.nextQuestion()">Далее</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Форма контактов -->
+    <div id="contacts-container" class="quiz-container">
+        <div class="container">
+            <div class="contacts-form">
+                <h2 class="section-title mb-20">Ваши отношения уже требуют первого шага</h2>
+                <p class="text-center mb-30" style="color: var(--text-light);">
+                    Мы уже рассчитали твой результат. Введи своё имя и мессенджер — и получи пошаговые рекомендации.
+                </p>
+                
+                <form id="contacts-form" onsubmit="Quiz.submitContacts(event)" novalidate>
+                    <div class="form-field">
+                        <label for="name">Имя *</label>
+                        <input type="text" id="name" name="name">
+                    </div>
+                    
+                    <div class="form-field">
+                        <label>Мессенджер *</label>
+                        <div class="messenger-selector" role="radiogroup" aria-label="Выбор мессенджера">
+                            <button type="button" class="messenger-option" data-value="telegram" aria-pressed="false">
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9.04 15.35l-.37 5.22c.53 0 .76-.23 1.03-.51l2.47-2.37 5.12 3.75c.94.52 1.61.25 1.87-.87l3.39-15.88h0c.3-1.39-.5-1.94-1.4-1.6L1.2 9.59c-1.34.52-1.32 1.26-.23 1.6l5.4 1.68L18.67 6.6c.65-.42 1.24-.19.76.23"/></svg>
+                                <span>Telegram</span>
+                            </button>
+                            <button type="button" class="messenger-option" data-value="whatsapp" aria-pressed="false">
+                                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.52 3.48A11.86 11.86 0 0012.06 0C5.51 0 .21 5.29.21 11.82a11.74 11.74 0 001.8 6.21L0 24l6.14-1.97a11.92 11.92 0 005.92 1.56h.01c6.55 0 11.85-5.3 11.85-11.84 0-3.17-1.24-6.15-3.4-8.27zM12.06 21.3a9.46 9.46 0 01-4.83-1.32l-.35-.21-3.64 1.17 1.19-3.55-.23-.36a9.46 9.46 0 01-1.45-5.08c0-5.23 4.26-9.49 9.5-9.49 2.54 0 4.93.99 6.72 2.77a9.44 9.44 0 012.78 6.71c0 5.23-4.27 9.49-9.49 9.49zm5.46-7.11c-.3-.15-1.78-.88-2.06-.98-.28-.1-.48-.15-.69.15-.2.3-.79.98-.97 1.18-.18.2-.36.22-.66.08-.3-.15-1.25-.46-2.37-1.47-.88-.79-1.47-1.77-1.64-2.07-.17-.3-.02-.46.13-.61.13-.14.3-.36.45-.54.15-.18.2-.3.3-.5.1-.2.05-.38-.02-.53-.07-.15-.69-1.66-.95-2.28-.25-.6-.5-.52-.69-.53h-.59c-.2 0-.52.07-.79.38-.27.3-1.04 1.02-1.04 2.48 0 1.46 1.07 2.88 1.22 3.08.15.2 2.1 3.21 5.08 4.5.71.31 1.26.49 1.7.63.71.22 1.36.19 1.87.11.57-.08 1.78-.73 2.03-1.4.25-.68.25-1.26.17-1.39-.08-.13-.27-.2-.57-.35z"/></svg>
+                                <span>WhatsApp</span>
+                            </button>
+                        </div>
+                        <input type="hidden" id="messenger" name="messenger">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="contact">Ваш ник/телефон *</label>
+                        <input type="text" id="contact" name="contact" placeholder="Выберите мессенджер выше">
+                        <p id="contact-hint" class="field-hint">Подсказка появится после выбора мессенджера</p>
+                        <p id="contact-error" class="field-error hidden">Проверьте корректность данных</p>
+                    </div>
+                    
+                    <button type="button" class="cta-button" style="width: 100%;" onclick="Quiz.submitContacts(event)">
+                        Получить результат
+                    </button>
+                    
+                    <p class="form-disclaimer">
+                        Никакого спама. Только твой результат и рекомендации.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Результат -->
+    <div id="result-container" class="quiz-container">
+        <div class="container">
+            <div class="result-card">
+                <div id="result-content"></div>
+                <button class="cta-button" onclick="Analytics.trackEvent('RESULT_CTA_CLICK')">
+                    Записаться на бесплатное пробное
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/analytics.js"></script>
+</body>
+</html>
