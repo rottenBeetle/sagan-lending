@@ -23,16 +23,10 @@
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
-    <header class="site-header">
-        <div class="container header-inner">
-            <a class="brand" href="index.html">SAGAN<span class="brand-accent">·</span></a>
-            <a id="header-cta" class="header-cta" href="quiz.html">Записаться на пробное</a>
-        </div>
-    </header>
     <!-- Главная страница лендинга -->
     <main id="landing" class="landing">
-        <!-- Hero секция -->
-        <section class="hero">
+        <!-- Блок 1: Hero секция (изначально видимый) -->
+        <section id="block-1" class="hero block active">
             <div class="container">
                 <div class="hero-content">
                     <h1>Ты рядом с дочерью, но как будто в разных мирах...</h1>
@@ -43,13 +37,13 @@
                         <p>И каждый раз внутри вспыхивает мысль: «Мы рядом, но я её теряю».</p>
                         <p><strong>Это нужно изменить прямо сейчас.</strong></p>
                     </div>
-                    <button class="cta-button">Узнать, сколько времени ещё есть</button>
+                    <button class="cta-button" onclick="startQuiz()">Узнать, сколько времени ещё есть</button>
                 </div>
             </div>
         </section>
 
-        <!-- Блок трансформации -->
-        <section class="transformation">
+        <!-- Блок 2: Блок трансформации -->
+        <section id="block-2" class="transformation block">
             <div class="container">
                 <h2 class="section-title">Она снова светится. Смотрит в кадр. Улыбается по-настоящему...</h2>
                 <div class="section-text">
@@ -58,11 +52,12 @@
                     <p>Они начинают поднимать голову, смотреть прямо в камеру, говорить о себе вслух.</p>
                     <p><strong>И ты видишь её снова — настоящую. Открытую. Живую. Счастливую.</strong></p>
                 </div>
+                <button class="cta-button" onclick="showBlock(3)">Продолжить</button>
             </div>
         </section>
 
-        <!-- Блок подхода -->
-        <section class="approach">
+        <!-- Блок 3: Блок подхода -->
+        <section id="block-3" class="approach block">
             <div class="container">
                 <h2 class="section-title">Никаких оценок. Только раскрытие.</h2>
                 <div class="section-text">
@@ -70,11 +65,12 @@
                     <p>На пробном девочки перестают прятать глаза. И впервые говорят: «Я красивая» — не в шутку, а по-настоящему.</p>
                     <p><strong>И именно этот момент часто становится переломным — когда ты вдруг подумаешь: «Вот она. Моя настоящая».</strong></p>
                 </div>
+                <button class="cta-button" onclick="showBlock(4)">Продолжить</button>
             </div>
         </section>
 
-        <!-- Оффер -->
-        <section class="offer">
+        <!-- Блок 4: Оффер -->
+        <section id="block-4" class="offer block">
             <div class="container">
                 <div class="offer-card">
                     <h2 class="section-title mb-30">Бесплатное пробное занятие</h2>
@@ -83,19 +79,32 @@
                         <p>Для тебя — увидеть её настоящую: с открытой улыбкой и горящими глазами.</p>
                         <p>Для неё — почувствовать: быть собой рядом с тобой безопасно и легко.</p>
                     </div>
-                    <a class="cta-button" href="/quiz">
+                    <button class="cta-button" onclick="showConfirmationModal()">
                         Записать дочку на пробное занятие
-                    </a>
+                    </button>
                 </div>
             </div>
         </section>
     </main>
 
+    <!-- Модальное окно подтверждения -->
+    <div id="confirmation-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Запись подтверждена!</h3>
+                <button class="modal-close" onclick="closeConfirmationModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Свяжемся с вами в выбранном вами мессенджере в ближайшее время.</p>
+                <p>Спасибо за доверие!</p>
+            </div>
+            <div class="modal-footer">
+                <button class="cta-button" onclick="closeConfirmationModal()">Понятно</button>
+            </div>
+        </div>
+    </div>
 
     <script src="assets/js/main.js"></script>
     <script src="assets/js/analytics.js"></script>
-
-    <!-- Скрипт для Google Apps Script (отдельный файл) -->
-    <!-- Google Apps Script template moved to assets/docs/google-apps-script-template.txt -->
 </body>
 </html>

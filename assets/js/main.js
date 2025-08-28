@@ -2,18 +2,163 @@
 
 // Config
 const CONFIG = {
-	GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyb7McXtMKzxqZ3LbTFiyvcecQCkm7LQBZB6cXuhdqLJp9SYwhyHyIxLhE2b_K1zxss/exec',
+	GOOGLE_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbydBonU1yPEZIpCZ75VWXkYizNhfM4Tck3xZ93yyEQgoLTt3sAWTJTTNkvD6l24hwuN/exec',
 	YANDEX_METRIKA_ID: 103903661
+};
+
+// UTM Manager - для работы с UTM метками в localStorage
+const UTMManager = {
+	STORAGE_KEY: 'sagan_utm_params',
+	
+	// Получить UTM параметры из URL
+	getUTMFromURL() {
+		const params = new URLSearchParams(window.location.search);
+		const utm = {};
+		['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(param => {
+			if (params.has(param)) utm[param] = params.get(param);
+		});
+		return Object.keys(utm).length > 0 ? utm : null;
+	},
+	
+	// Сохранить UTM параметры в localStorage
+	saveUTMToStorage(utmParams) {
+		if (!utmParams || Object.keys(utmParams).length === 0) return;
+		
+		try {
+			// Проверяем, есть ли уже сохраненные UTM
+			const existingData = this.getUTMDataFromStorage();
+			const isFirstVisit = !existingData;
+			
+			const utmData = {
+				params: utmParams,
+				timestamp: Date.now(),
+				firstVisit: isFirstVisit,
+				firstVisitTimestamp: isFirstVisit ? Date.now() : (existingData?.firstVisitTimestamp || Date.now()),
+				visitsCount: isFirstVisit ? 1 : ((existingData?.visitsCount || 0) + 1)
+			};
+			localStorage.setItem(this.STORAGE_KEY, JSON.stringify(utmData));
+			console.log('UTM параметры сохранены в localStorage:', utmParams);
+		} catch (error) {
+			console.error('Ошибка сохранения UTM в localStorage:', error);
+		}
+	},
+	
+	// Получить UTM параметры из localStorage
+	getUTMFromStorage() {
+		try {
+			const stored = localStorage.getItem(this.STORAGE_KEY);
+			if (!stored) return null;
+			
+			const utmData = JSON.parse(stored);
+			return utmData.params || null;
+		} catch (error) {
+			console.error('Ошибка чтения UTM из localStorage:', error);
+			return null;
+		}
+	},
+	
+	// Получить полные данные UTM из localStorage
+	getUTMDataFromStorage() {
+		try {
+			const stored = localStorage.getItem(this.STORAGE_KEY);
+			if (!stored) return null;
+			
+			return JSON.parse(stored);
+		} catch (error) {
+			console.error('Ошибка чтения UTM данных из localStorage:', error);
+			return null;
+		}
+	},
+	
+	// Инициализация UTM менеджера
+	init() {
+		// Проверяем, есть ли UTM параметры в URL
+		const urlUTM = this.getUTMFromURL();
+		
+		if (urlUTM) {
+			// Если есть UTM в URL, сохраняем их в localStorage
+			this.saveUTMToStorage(urlUTM);
+		} else {
+			// Если UTM нет в URL, проверяем localStorage
+			const storedUTM = this.getUTMFromStorage();
+			if (storedUTM) {
+				console.log('Используем UTM из localStorage:', storedUTM);
+			}
+		}
+		
+		// Отслеживаем событие инициализации UTM
+		const utmData = this.getUTMDataFromStorage();
+		if (utmData) {
+			Analytics.trackEvent('UTM_INITIALIZED', {
+				hasUTM: !!utmData.params,
+				isFirstVisit: utmData.firstVisit,
+				utmSource: utmData.params?.utm_source || null,
+				utmMedium: utmData.params?.utm_medium || null,
+				utmCampaign: utmData.params?.utm_campaign || null
+			});
+		}
+	},
+	
+	// Получить актуальные UTM параметры (приоритет: URL > localStorage)
+	getCurrentUTM() {
+		const urlUTM = this.getUTMFromURL();
+		if (urlUTM) return urlUTM;
+		
+		return this.getUTMFromStorage();
+	},
+	
+	// Очистить UTM данные из localStorage
+	clearUTM() {
+		try {
+			localStorage.removeItem(this.STORAGE_KEY);
+			console.log('UTM данные очищены из localStorage');
+		} catch (error) {
+			console.error('Ошибка очистки UTM из localStorage:', error);
+		}
+	},
+	
+	// Получить статистику UTM
+	getUTMStats() {
+		const utmData = this.getUTMDataFromStorage();
+		if (!utmData) return null;
+		
+		const now = Date.now();
+		const firstVisitAge = Math.round((now - utmData.firstVisitTimestamp) / (1000 * 60 * 60 * 24)); // дни
+		const lastVisitAge = Math.round((now - utmData.timestamp) / (1000 * 60 * 60 * 24)); // дни
+		
+		return {
+			utmParams: utmData.params,
+			firstVisit: utmData.firstVisit,
+			firstVisitAge: firstVisitAge,
+			lastVisitAge: lastVisitAge,
+			visitsCount: utmData.visitsCount,
+			totalDaysSinceFirstVisit: firstVisitAge
+		};
+	}
 };
 
 // Analytics
 const Analytics = {
-	trackEvent(eventName, params = {}) {
+	_clientId: null,
+	getClientId() {
+		// Returns Promise<string|null>
+		return new Promise(resolve => {
+			try {
+				if (this._clientId) { resolve(this._clientId); return; }
+				if (typeof ym === 'undefined') { resolve(null); return; }
+				const self = this;
+				ym(CONFIG.YANDEX_METRIKA_ID, 'getClientID', function(clientId){ self._clientId = clientId || null; resolve(self._clientId); });
+			} catch (_) { resolve(null); }
+		});
+	},
+	async trackEvent(eventName, params = {}) {
 		try {
+			const clientId = await this.getClientId();
+			const payload = clientId ? Object.assign({ clientId }, params) : params;
 			if (typeof ym !== 'undefined') {
-				ym(103903661, 'reachGoal', eventName, params);
+				ym(CONFIG.YANDEX_METRIKA_ID, 'reachGoal', eventName, payload);
 			}
-			console.log('Событие отправлено:', eventName, params);
+			console.log('Событие отправлено:', eventName, payload);
 		} catch (error) {
 			console.error('Ошибка отправки события:', error);
 		}
@@ -27,6 +172,8 @@ const Quiz = {
 	totalScore: 0,
 	startTime: null,
 	questionStartTime: null,
+	// Prevent duplicate submits
+	isSubmittingContacts: false,
 
 	questions: [
 		{
@@ -149,19 +296,23 @@ const Quiz = {
 		const selectedAnswer = question.answers[answerIndex];
 		this.answers[this.currentQuestion] = { questionIndex: this.currentQuestion, answerIndex, points: selectedAnswer.points };
 		document.getElementById('next-button').classList.add('enabled');
-		
-		// Расширенное отслеживание ответа
-		Analytics.trackEvent(`QUIZ_QUESTION_${this.currentQuestion + 1}`, { 
-			answer: selectedAnswer.text, 
-			points: selectedAnswer.points,
-			questionNumber: this.currentQuestion + 1,
-			timeSpent: this.getTimeSpentOnQuestion()
-		});
 	},
 
 	nextQuestion() {
 		const nextButton = document.getElementById('next-button');
 		if (!nextButton.classList.contains('enabled')) return;
+		// Отправляем событие ответа только при подтверждении (клик Далее)
+		const question = this.questions[this.currentQuestion];
+		const answerRecord = this.answers[this.currentQuestion];
+		if (answerRecord) {
+			const selectedAnswer = question.answers[answerRecord.answerIndex];
+			Analytics.trackEvent(`QUIZ_QUESTION_${this.currentQuestion + 1}`, {
+				answer: selectedAnswer.text,
+				points: selectedAnswer.points,
+				questionNumber: this.currentQuestion + 1,
+				timeSpent: this.getTimeSpentOnQuestion()
+			});
+		}
 		this.currentQuestion++;
 		this.updateProgress();
 		if (this.currentQuestion < this.questions.length) {
@@ -207,6 +358,12 @@ const Quiz = {
 		event.preventDefault();
 		event.stopPropagation();
 		console.debug('[Quiz] submitContacts called');
+
+		// Guard: prevent double submit
+		if (this.isSubmittingContacts) {
+			console.debug('[Quiz] submit blocked: already submitting');
+			return;
+		}
 		
 		// Get form element - either from event.target (form submit) or by ID (button click)
 		const form = event.target.tagName === 'FORM' ? event.target : document.getElementById('contacts-form');
@@ -214,7 +371,10 @@ const Quiz = {
 			console.error('[Quiz] Form not found');
 			return;
 		}
-		
+
+		// Resolve CTA button (for both button click and Enter submit)
+		const ctaButton = form.querySelector('.cta-button');
+
 		const formData = new FormData(form);
 		const name = formData.get('name');
 		const messenger = formData.get('messenger');
@@ -233,16 +393,31 @@ const Quiz = {
 			errorEl.classList.remove('hidden');
 			return;
 		}
+
+		// Enter loading state
+		this.isSubmittingContacts = true;
+		let originalButtonHTML = '';
+		if (ctaButton) {
+			originalButtonHTML = ctaButton.innerHTML;
+			ctaButton.classList.add('loading');
+			ctaButton.setAttribute('disabled', 'disabled');
+			ctaButton.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>Отправка…</span>';
+		}
 		const submissionData = {
 			name: name.trim(),
 			messenger,
 			contact: contact.trim(),
-			answers: this.answers,
-			totalScore: this.totalScore,
 			level: this.getResultLevel(),
 			timestamp: new Date().toISOString(),
 			utm: this.getUTMParams()
 		};
+
+		// Attach Metrika IDs
+		try {
+			const clientId = await Analytics.getClientId();
+			submissionData.clientId = clientId || '';
+			submissionData.userId = Analytics.uid;
+		} catch (_) {}
 		try {
 			await this.sendDataToGoogle(submissionData);
 			Analytics.trackEvent('CONTACTS_FORM_SUBMIT', { level: submissionData.level, score: submissionData.totalScore });
@@ -258,6 +433,14 @@ const Quiz = {
 				console.error('Ошибка отправки данных (фолбэк):', fallbackError);
 				alert('Произошла ошибка. Пожалуйста, попробуйте еще раз.');
 			}
+		} finally {
+			// Exit loading state
+			this.isSubmittingContacts = false;
+			if (ctaButton) {
+				ctaButton.classList.remove('loading');
+				ctaButton.removeAttribute('disabled');
+				if (originalButtonHTML) ctaButton.innerHTML = originalButtonHTML;
+			}
 		}
 	},
 
@@ -266,11 +449,24 @@ async sendDataToGoogle(data) {
   formData.append('name', data.name);
   formData.append('messenger', data.messenger);
   formData.append('contact', data.contact);
-  formData.append('answers', JSON.stringify(data.answers));
-  formData.append('totalScore', data.totalScore);
+  // Do not send answers/totalScore per new requirements
   formData.append('level', data.level);
   formData.append('timestamp', data.timestamp);
-  if (data.utm) formData.append('utm', JSON.stringify(data.utm));
+  if (data.clientId) formData.append('clientId', data.clientId);
+  
+  // Расширенная информация о UTM
+  if (data.utm) {
+    const utmStats = UTMManager.getUTMStats();
+    const enhancedUTM = {
+      ...data.utm,
+      stats: utmStats ? {
+        visitsCount: utmStats.visitsCount,
+        totalDaysSinceFirstVisit: utmStats.totalDaysSinceFirstVisit,
+        isFirstVisit: utmStats.firstVisit
+      } : null
+    };
+    formData.append('utm', JSON.stringify(enhancedUTM));
+  }
 
   await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
     method: 'POST',
@@ -288,12 +484,23 @@ async sendDataToGoogle(data) {
 		formData.append('name', data.name);
 		formData.append('messenger', data.messenger);
 		formData.append('contact', data.contact);
-		formData.append('answers', JSON.stringify(data.answers));
-		formData.append('totalScore', data.totalScore);
+		// Do not send answers/totalScore per new requirements
 		formData.append('level', data.level);
 		formData.append('timestamp', data.timestamp);
+		if (data.clientId) formData.append('clientId', data.clientId);
+		
+		// Расширенная информация о UTM
 		if (data.utm) {
-			formData.append('utm', JSON.stringify(data.utm));
+			const utmStats = UTMManager.getUTMStats();
+			const enhancedUTM = {
+				...data.utm,
+				stats: utmStats ? {
+					visitsCount: utmStats.visitsCount,
+					totalDaysSinceFirstVisit: utmStats.totalDaysSinceFirstVisit,
+					isFirstVisit: utmStats.firstVisit
+				} : null
+			};
+			formData.append('utm', JSON.stringify(enhancedUTM));
 		}
 		
 		await fetch(CONFIG.GOOGLE_SCRIPT_URL, {
@@ -306,12 +513,8 @@ async sendDataToGoogle(data) {
 	},
 
 	getUTMParams() {
-		const params = new URLSearchParams(window.location.search);
-		const utm = {};
-		['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach(param => {
-			if (params.has(param)) utm[param] = params.get(param);
-		});
-		return Object.keys(utm).length > 0 ? utm : null;
+		// Используем UTMManager для получения UTM параметров
+		return UTMManager.getCurrentUTM();
 	},
 
 	showResult() {
@@ -345,6 +548,8 @@ async sendDataToGoogle(data) {
 // Public start fn
 function startQuiz() {
 	Analytics.trackEvent('QUIZ_START');
+	Analytics.trackEvent('BLOCK_1_CTA_CLICK'); // Track CTA click from block 1
+	
 	const landing = document.getElementById('landing');
 	const quizContainer = document.getElementById('quiz-container');
 	if (!quizContainer) { window.location.href = 'quiz.html'; return; }
@@ -355,6 +560,9 @@ function startQuiz() {
 
 // Init
 document.addEventListener('DOMContentLoaded', function() {
+	// Инициализация UTM менеджера
+	UTMManager.init();
+	
 	// Header CTA
 	const headerCta = document.getElementById('header-cta');
 	if (headerCta) {
@@ -381,6 +589,24 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (landing) landing.style.display = 'none';
 		document.getElementById('quiz-container').classList.add('active');
 		Quiz.init();
+	} else {
+		// Handle block navigation for main page
+		handleBlockNavigation();
+		
+		// Track first block view if no specific block is requested
+		const urlParams = new URLSearchParams(window.location.search);
+		const targetBlock = urlParams.get('block');
+		if (!targetBlock) {
+			// Track first block view
+			Analytics.trackEvent('BLOCK_1_VIEWED');
+			const viewedBlocks = getViewedBlocks();
+			viewedBlocks.add(1);
+			saveViewedBlocks(viewedBlocks);
+			Analytics.trackEvent('TOTAL_BLOCKS_VIEWED', { 
+				count: viewedBlocks.size,
+				blocks: Array.from(viewedBlocks).join(',')
+			});
+		}
 	}
 
 	// Messenger selector behavior
@@ -451,6 +677,85 @@ window.addEventListener('beforeunload', function() {
 // Expose to window
 window.Quiz = Quiz;
 window.startQuiz = startQuiz;
+window.UTMManager = UTMManager;
+
+// Block Navigation System
+function showBlock(blockNumber) {
+	// Hide all blocks
+	document.querySelectorAll('.block').forEach(block => {
+		block.classList.remove('active');
+	});
+	
+	// Show target block
+	const targetBlock = document.getElementById(`block-${blockNumber}`);
+	if (targetBlock) {
+		targetBlock.classList.add('active');
+		
+		// Scroll to top of the page for smooth transition
+		window.scrollTo({
+			top: 0,
+			behavior: 'smooth'
+		});
+		
+		// Track block navigation
+		Analytics.trackEvent('BLOCK_NAVIGATION', { 
+			fromBlock: getCurrentBlock(), 
+			toBlock: blockNumber 
+		});
+		
+		// Track specific block views for Yandex Metrika
+		Analytics.trackEvent(`BLOCK_${blockNumber}_VIEWED`);
+		
+		// Track total blocks viewed
+		const viewedBlocks = getViewedBlocks();
+		viewedBlocks.add(blockNumber);
+		saveViewedBlocks(viewedBlocks);
+		Analytics.trackEvent('TOTAL_BLOCKS_VIEWED', { 
+			count: viewedBlocks.size,
+			blocks: Array.from(viewedBlocks).join(',')
+		});
+	}
+}
+
+function getCurrentBlock() {
+	const activeBlock = document.querySelector('.block.active');
+	if (activeBlock) {
+		const blockId = activeBlock.id;
+		return parseInt(blockId.replace('block-', ''));
+	}
+	return 1;
+}
+
+function getViewedBlocks() {
+	// Get viewed blocks from sessionStorage
+	const viewed = sessionStorage.getItem('viewedBlocks');
+	return new Set(viewed ? JSON.parse(viewed) : []);
+}
+
+function saveViewedBlocks(blocks) {
+	sessionStorage.setItem('viewedBlocks', JSON.stringify(Array.from(blocks)));
+}
+
+function returnToMainPage() {
+	// Track the return event
+	Analytics.trackEvent('RETURN_TO_MAIN_PAGE');
+	
+	// Redirect to main page and show block 2
+	window.location.href = 'index.html?block=2';
+}
+
+// Handle URL parameters for block navigation
+function handleBlockNavigation() {
+	const urlParams = new URLSearchParams(window.location.search);
+	const targetBlock = urlParams.get('block');
+	
+	if (targetBlock && !isNaN(targetBlock)) {
+		// Wait for DOM to be ready
+		setTimeout(() => {
+			showBlock(parseInt(targetBlock));
+		}, 100);
+	}
+}
 
 // Helpers
 Quiz.validateContact = function(messenger, value) {
@@ -461,6 +766,62 @@ Quiz.validateContact = function(messenger, value) {
 	const digits = value.replace(/[^0-9+]/g, '');
 	return /^\+[1-9][0-9]{7,14}$/.test(digits);
 };
+
+// Expose block navigation functions to window
+window.showBlock = showBlock;
+window.returnToMainPage = returnToMainPage;
+
+// ===== Модальное окно подтверждения =====
+function showConfirmationModal() {
+	// Отслеживание клика по кнопке в блоке 4
+	Analytics.trackEvent('BLOCK_4_CTA_CLICK');
+	
+	const modal = document.getElementById('confirmation-modal');
+	if (modal) {
+		modal.classList.add('active');
+		document.body.style.overflow = 'hidden'; // Блокируем прокрутку страницы
+		
+		// Отслеживание показа модального окна
+		Analytics.trackEvent('CONFIRMATION_MODAL_SHOWN');
+	}
+}
+
+function closeConfirmationModal() {
+	const modal = document.getElementById('confirmation-modal');
+	if (modal) {
+		modal.classList.remove('active');
+		document.body.style.overflow = ''; // Восстанавливаем прокрутку страницы
+		
+		// Отслеживание закрытия модального окна
+		Analytics.trackEvent('CONFIRMATION_MODAL_CLOSED');
+	}
+}
+
+// Закрытие модального окна при клике вне его
+document.addEventListener('DOMContentLoaded', function() {
+	const modal = document.getElementById('confirmation-modal');
+	if (modal) {
+		modal.addEventListener('click', function(event) {
+			if (event.target === modal) {
+				closeConfirmationModal();
+			}
+		});
+	}
+	
+	// Закрытие модального окна по клавише Escape
+	document.addEventListener('keydown', function(event) {
+		if (event.key === 'Escape') {
+			const modal = document.getElementById('confirmation-modal');
+			if (modal && modal.classList.contains('active')) {
+				closeConfirmationModal();
+			}
+		}
+	});
+});
+
+// Expose modal functions to window
+window.showConfirmationModal = showConfirmationModal;
+window.closeConfirmationModal = closeConfirmationModal;
 
 
 

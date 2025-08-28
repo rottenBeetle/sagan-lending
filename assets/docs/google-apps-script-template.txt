@@ -1,49 +1,70 @@
-// Поместите этот код в Google Apps Script и разверните как веб-приложение (любой доступ, у кого есть ссылка)
-
 function doPost(e) {
-	try {
-		const data = JSON.parse(e.postData.contents);
-		if (!data.name || !data.messenger || !data.answers) {
-			return createResponse({ status: 'error', message: 'Обязательные поля не заполнены' });
-		}
-		const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID';
-		const sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
-		const rowData = [
-			new Date(),
-			data.name,
-			data.messenger,
-			...data.answers.map(a => a.points),
-			data.totalScore,
-			data.level,
-			data.utm ? JSON.stringify(data.utm) : ''
-		];
-		sheet.appendRow(rowData);
-		return createResponse({ status: 'success', message: 'Данные успешно сохранены' });
-	} catch (error) {
-		console.error('Ошибка обработки запроса:', error);
-		return createResponse({ status: 'error', message: 'Внутренняя ошибка сервера' });
-	}
+  try {
+    let data;
+    
+    // Если JSON
+    if (e.postData && e.postData.type === 'application/json') {
+      data = JSON.parse(e.postData.contents);
+    } else {
+      // Если form-data
+      const params = e.parameter;
+      data = {
+        name: params.name,
+        messenger: params.messenger,
+        contact: params.contact,
+        // answers and totalScore are no longer collected
+        level: params.level,
+        timestamp: params.timestamp,
+        clientId: params.clientId || '',
+        utm: params.utm ? JSON.parse(params.utm) : null
+      };
+    }
+
+    if (!data.name || !data.messenger) {
+      return jsonResponse({ status: 'error', message: 'Обязательные поля не заполнены' });
+    }
+
+    const SHEET_ID = '12H1fDBum2nza0LjqXMwSBPio4k2Ccvpb4FiCnXmAZI0';
+    const sheet = SpreadsheetApp.openById(SHEET_ID).getActiveSheet();
+
+    // ✅ Добавляем заголовки, если таблица пустая
+    if (sheet.getLastRow() === 0) {
+      const headers = [
+        'Дата и время',
+        'Имя',
+        'Мессенджер',
+        'Контакт',
+        'Уровень',
+        'clientId (YM)',
+        'UTM-метки'
+      ];
+      sheet.appendRow(headers);
+    }
+
+    // Собираем данные для строки
+    const rowData = [
+      new Date(),
+      data.name,
+      data.messenger,
+      data.contact,
+      data.level,
+      data.clientId,
+      data.utm ? JSON.stringify(data.utm) : ''
+    ];
+
+    sheet.appendRow(rowData);
+
+    return jsonResponse({ status: 'success', message: 'Данные успешно сохранены' });
+
+  } catch (error) {
+    console.error('Ошибка обработки запроса:', error);
+    return jsonResponse({ status: 'error', message: 'Внутренняя ошибка сервера: ' + error.message });
+  }
 }
 
-function createResponse(data) {
-	return ContentService
-		.createTextOutput(JSON.stringify(data))
-		.setMimeType(ContentService.MimeType.JSON)
-		.setHeaders({
-			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'POST',
-			'Access-Control-Allow-Headers': 'Content-Type'
-		});
+// Ответ всегда JSON
+function jsonResponse(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
 }
-
-function doOptions(e) {
-	return createResponse({});
-}
-
-
-
-
-
-
-
-

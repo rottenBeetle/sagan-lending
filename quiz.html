@@ -23,12 +23,12 @@
     <link rel="stylesheet" href="assets/css/styles.css">
 </head>
 <body>
-    <header class="site-header">
+    <!-- <header class="site-header">
         <div class="container header-inner">
             <a class="brand" href="index.html">SAGAN<span class="brand-accent">·</span></a>
             <a id="header-cta" class="header-cta" href="quiz.html">Записаться на пробное</a>
         </div>
-    </header>
+    </header> -->
 
     <!-- Контейнер квиза -->
     <div id="quiz-container" class="quiz-container active">
@@ -106,8 +106,8 @@
         <div class="container">
             <div class="result-card">
                 <div id="result-content"></div>
-                <button class="cta-button" onclick="Analytics.trackEvent('RESULT_CTA_CLICK')">
-                    Записаться на бесплатное пробное
+                <button class="cta-button" onclick="returnToMainPage()">
+                    Вернуть контакт
                 </button>
             </div>
         </div>

@@ -99,21 +99,7 @@ body {
 	overflow: hidden;
 }
 
-.hero::before {
-	content: '';
-	position: absolute;
-	top: -50%;
-	right: -50%;
-	width: 200%;
-	height: 200%;
-	background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="2" fill="rgba(255,255,255,0.1)"/></svg>') repeat;
-	animation: float 22s infinite linear;
-}
-
-@keyframes float {
-	0% { transform: translate(-50%, -50%) rotate(0deg); }
-	100% { transform: translate(-50%, -50%) rotate(360deg); }
-}
+/* Removed hero animation for cleaner look */
 
 .hero-content {
 	position: relative;
@@ -159,6 +145,35 @@ body {
 	transform: translateY(-2px);
 	box-shadow: 0 14px 28px rgba(139,123,255,0.35);
 	background: var(--accent-purple-strong);
+}
+
+/* Loading state for CTA buttons */
+.cta-button.loading,
+.cta-button[disabled] {
+	opacity: 0.7;
+	cursor: not-allowed;
+	transform: none;
+}
+
+.cta-button.loading {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+}
+
+.cta-button .spinner {
+	width: 18px;
+	height: 18px;
+	border: 2px solid rgba(255,255,255,0.6);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+	0% { transform: rotate(0deg); }
+	100% { transform: rotate(360deg); }
 }
 
 /* Sections */
@@ -429,12 +444,254 @@ body {
 	.transformation,
 	.approach,
 	.offer { padding: 64px 0; }
+	
+	/* Adjust background images for mobile */
+	.block::before {
+		background-size: 60% auto;
+		opacity: 0.05;
+	}
+	
+	/* Block 1 - mother1 left */
+	#block-1::before {
+		background-position: left center;
+	}
+	
+	/* Block 2 - mother2 right */
+	#block-2::before {
+		background-position: right center;
+	}
+	
+	/* Block 3 - mother1 left */
+	#block-3::before {
+		background-position: left center;
+	}
+	
+	/* Block 4 - mother2 right */
+	#block-4::before {
+		background-position: right center;
+	}
 }
 
+/* Block Navigation System */
+.block {
+	display: none;
+	opacity: 0;
+	transform: translateY(20px);
+	transition: opacity 0.6s ease, transform 0.6s ease;
+	position: relative;
+}
 
+.block.active {
+	display: flex;
+	opacity: 1;
+	transform: translateY(0);
+}
 
+.block:not(.hero) {
+	min-height: 100vh;
+	align-items: center;
+	justify-content: center;
+}
 
+/* Background images for blocks */
+.block::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: left center;
+	opacity: 0.03;
+	z-index: 1;
+	pointer-events: none;
+}
 
+/* Block 1 - mother1 left */
+#block-1::before {
+	background-image: url('../images/mouther1.png');
+	background-position: left center;
+}
 
+/* Block 2 - mother2 right */
+#block-2::before {
+	background-image: url('../images/mouther2.png');
+	background-position: right center;
+}
 
+/* Block 3 - mother1 left */
+#block-3::before {
+	background-image: url('../images/mouther1.png');
+	background-position: left center;
+}
 
+/* Block 4 - mother2 right */
+#block-4::before {
+	background-image: url('../images/mouther2.png');
+	background-position: right center;
+}
+
+/* Ensure content is above background images */
+.block .container {
+	position: relative;
+	z-index: 2;
+}
+
+/* Smooth transitions between blocks */
+.block.fade-out {
+	opacity: 0;
+	transform: translateY(-20px);
+}
+
+/* Navigation buttons styling */
+.block .cta-button {
+	margin-top: 30px;
+	animation: fadeInUp 0.8s ease 0.3s both;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateY(20px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* ===== Модальное окно подтверждения ===== */
+.modal-overlay {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background: rgba(0, 0, 0, 0.5);
+	display: none;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+	backdrop-filter: blur(4px);
+	opacity: 0;
+	transition: opacity 0.3s ease;
+}
+
+.modal-overlay.active {
+	display: flex;
+	opacity: 1;
+}
+
+.modal-content {
+	background: var(--surface);
+	border-radius: var(--border-radius);
+	box-shadow: var(--shadow);
+	max-width: 500px;
+	width: 90%;
+	margin: 20px;
+	transform: scale(0.9);
+	transition: transform 0.3s ease;
+	overflow: hidden;
+}
+
+.modal-overlay.active .modal-content {
+	transform: scale(1);
+}
+
+.modal-header {
+	padding: 24px 24px 16px;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.modal-header h3 {
+	margin: 0;
+	font-size: 1.5rem;
+	font-weight: 700;
+	color: var(--text-dark);
+}
+
+.modal-close {
+	background: none;
+	border: none;
+	font-size: 24px;
+	color: var(--text-light);
+	cursor: pointer;
+	padding: 4px;
+	border-radius: 50%;
+	width: 32px;
+	height: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.modal-close:hover {
+	background: rgba(0, 0, 0, 0.05);
+	color: var(--text-dark);
+}
+
+.modal-body {
+	padding: 24px;
+	text-align: center;
+}
+
+.modal-body p {
+	margin: 0 0 16px 0;
+	font-size: 1.1rem;
+	line-height: 1.6;
+	color: var(--text-dark);
+}
+
+.modal-body p:last-child {
+	margin-bottom: 0;
+	color: var(--text-light);
+	font-size: 1rem;
+}
+
+.modal-footer {
+	padding: 16px 24px 24px;
+	text-align: center;
+	border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.modal-footer .cta-button {
+	margin: 0;
+	width: 100%;
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+	.modal-content {
+		width: 95%;
+		margin: 10px;
+	}
+	
+	.modal-header {
+		padding: 20px 20px 12px;
+	}
+	
+	.modal-header h3 {
+		font-size: 1.3rem;
+	}
+	
+	.modal-body {
+		padding: 20px;
+	}
+	
+	.modal-body p {
+		font-size: 1rem;
+	}
+	
+	.modal-footer {
+		padding: 12px 20px 20px;
+	}
+}
